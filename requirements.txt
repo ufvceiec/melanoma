@@ -1,0 +1,14 @@
+tqdm
+pandas
+numpy
+opencv-python-headless
+staintools
+torch
+torchvision
+scikit-image
+matplotlib
+pillow
+openslide-python
+optuna
+scikit-learn
+seaborn

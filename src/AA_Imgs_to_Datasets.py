@@ -5,6 +5,9 @@ from pathlib import Path
 import random
 import shutil
 import pandas as pd
+import gc
+
+from src.BA_Crear_Recortes import Crear_Recortes
 
 #-------------------------------------------------------------------------------------------------------------
 
@@ -95,36 +98,48 @@ def Distribuir_Pacientes(ruta_carpeta):
 #-------------------------------------------------------------------------------------------------------------
 
 def Cargar_Rutas_Datasets():
+    import os
     # Si el fichero de configuracion no existe no continua el programa
-    if not os.path.exists('./config.cfg'):
-        raise FileNotFoundError("El archivo de configuración 'config.cfg' no se encontró.")
-
+    
     # Creamos un objeto configparser
     config = configparser.ConfigParser()
     # Leemos el fichero de configuracion
+    import os
+
+    
     config.read('./config.cfg')
+   
+
     # Extraemos la carpeta de imagenes sin procesar
-    ruta_carpeta = config['Imagenes_NP']['carpeta_imagenes']
-    # Sacamos un listado de los pacientes que van a cada set
-    train, val, test = Distribuir_Pacientes(ruta_carpeta)
-    # Extraemos las rutas de los archivos de la carpeta
-    archivos = Extraer_Archivos(ruta_carpeta)
+    ruta_carpetas = []
+    ruta_carpetas.append(config['Imagenes_NP']['carpeta_imagenes_correctas'])
+    ruta_carpetas.append(config['Imagenes_NP']['carpeta_imagenes_multiples_cortes'])
+    ruta_carpetas.append(config['Imagenes_NP']['carpeta_imagenes_multiples_cortes_correctos'])
 
     # Creamos 3 listas vacias para almacenar las rutas de las imagenes
     rutas_train, rutas_val, rutas_test = [], [], []
 
-    # Recorremos los archivos con los nombres de los pacientes
-    for archivo in archivos:
-        # Extraemos el nombre del paciente de dicho archivo
-        name = (archivo.name.split('_')[0]).split('.')[0]
-        # Si el paciente se encuentra en alguno de los sets se alamacena la ruta en dicho set
-        if name in train:
-            rutas_train.append(archivo)
-        elif name in val:
-            rutas_val.append(archivo)
-        elif name in test:
-            rutas_test.append(archivo)
-
+    for ruta_carpeta in ruta_carpetas:
+        # Sacamos un listado de los pacientes que van a cada set
+        train, val, test = Distribuir_Pacientes(ruta_carpeta)
+        # Extraemos las rutas de los archivos de la carpeta
+        archivos = Extraer_Archivos(ruta_carpeta)
+    
+        # Recorremos los archivos con los nombres de los pacientes
+        for archivo in archivos:
+            # Extraemos el nombre del paciente de dicho archivo
+            name = (archivo.name.split('_')[0]).split('.')[0]
+            # Si el paciente se encuentra en alguno de los sets se alamacena la ruta en dicho set
+            if name in train:
+                rutas_train.append(archivo)
+            elif name in val:
+                rutas_val.append(archivo)
+            elif name in test:
+                rutas_test.append(archivo)
+        
+        del archivos
+        gc.collect
+    
     return rutas_train, rutas_val, rutas_test
 
 #-------------------------------------------------------------------------------------------------------------
@@ -143,25 +158,30 @@ def Crear_Datasets():
     ruta_val = Path(config['Carpetas']['carpeta_val'])
     ruta_test = Path(config['Carpetas']['carpeta_test'])
 
+    ruta_destino_train = Path(config['Carpetas']['carpeta_recortes_train'])
+    ruta_destino_val = Path(config['Carpetas']['carpeta_recortes_val'])
+    ruta_destino_test = Path(config['Carpetas']['carpeta_recortes_test'])
+    
     # Eliminamos y volvemos a crear las carpetas vacías
-    for ruta in [ruta_train, ruta_val, ruta_test]:
+    for ruta in tqdm([ruta_train, ruta_val, ruta_test, ruta_destino_train, ruta_destino_val, ruta_destino_test], desc='Limpiando directorios'):
         if ruta.exists():
             shutil.rmtree(ruta)
         ruta.mkdir(parents=True, exist_ok=True)
     # Cargamos las rutas de imagenes de cada set
+    """
     rutas_train, rutas_val, rutas_test = Cargar_Rutas_Datasets()
-
+   
     # Recorremos las rutas de las imagenes de cada set copiandolas en la carpeta indicada
     for ruta in tqdm(rutas_train, desc='Copiando train'):
         if ruta.is_file():
-            shutil.copy(ruta, ruta_train)
-
+            Crear_Recortes(ruta, ruta_destino_train, tiny_set=-1)
+    
     for ruta in tqdm(rutas_val, desc='Copiando val'):
         if ruta.is_file():
-            shutil.copy(ruta, ruta_val)
+            Crear_Recortes(ruta, ruta_destino_val, tiny_set=-1)
 
     for ruta in tqdm(rutas_test, desc='Copiando test'):
         if ruta.is_file():
-            shutil.copy(ruta, ruta_test)
-
+            Crear_Recortes(ruta, ruta_destino_test, tiny_set=-1)
+    """
 #-------------------------------------------------------------------------------------------------------------

@@ -22,7 +22,7 @@ Este repositorio contiene un sistema desarrollado para la detección, análisis 
 Clonar el repositorio:
 
 ```bash
-git clone https://github.com/ufvceiec/melanoma_refactorizado.git
+git clone https://github.com/ufvceiec/melanoma.git
 cd melanoma
 
 python -m venv venv
